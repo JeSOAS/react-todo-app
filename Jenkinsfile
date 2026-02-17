@@ -5,13 +5,12 @@ pipeline {
 
         // Replace with your actual Docker Hub username
         DOCKER_HUB_USER = 'jesoas'
-
         IMAGE_NAME = 'finead-todo-app'
 
         // This ID must match the Credential ID created in Jenkins (Username with Password)
 
         DOCKER_HUB_CREDS = 'docker-hub-credentials'
-
+	PUPPETEER_SKIP_DOWNLOAD = 'true'
     }
     stages {
 
@@ -23,7 +22,7 @@ pipeline {
 
                 // Install dependencies
 
-                sh 'PUPPETEER_SKIP_DOWNLOAD=true npm install'
+                sh 'export PUPPETEER_SKIP_DOWNLOAD=true && npm install'
 
             }
 

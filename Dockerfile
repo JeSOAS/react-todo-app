@@ -1,7 +1,13 @@
 # syntax=docker/dockerfile:1
-FROM node:12-alpine
-RUN apk add --no-cache python3 g++ make
-WORKDIR /app
+FROM node:alpine
+
+WORKDIR /usr/src/app
+
+RUN apk add --no-cache python3 make g++ sqlite
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
 COPY . .
-RUN yarn install --production
-CMD ["node", "src/index.js"]
+EXPOSE 3000
+CMD ["node", "app.js"]

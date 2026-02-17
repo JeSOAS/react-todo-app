@@ -22,7 +22,7 @@ pipeline {
 
                 // Install dependencies
 
-                sh 'export PUPPETEER_SKIP_DOWNLOAD=true && npm install'
+                sh 'npm install --ignore-scripts'
 
             }
 

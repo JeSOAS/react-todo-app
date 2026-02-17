@@ -1,111 +1,92 @@
-pipeline { 
+pipeline {
+    agent any
 
-    agent any 
+    environment {
 
-  
+        // Replace with your actual Docker Hub username
+        DOCKER_HUB_USER = 'jesoas'
 
-    environment { 
+        IMAGE_NAME = 'finead-todo-app'
 
-        // Replace with your actual Docker Hub username 
+        // This ID must match the Credential ID created in Jenkins (Username with Password)
 
-        DOCKER_HUB_USER = 'jesoas' 
+        DOCKER_HUB_CREDS = 'docker-hub-credentials'
 
-        IMAGE_NAME = 'finead-todo-app' 
+    }
+    stages {
 
-        // This ID must match the Credential ID created in Jenkins (Username with Password) 
+        stage('Build') {
 
-        DOCKER_HUB_CREDS = 'docker-hub-credentials' 
+            steps {
 
-    } 
+                echo 'Building the application...'
 
-  
+                // Install dependencies
 
-    stages { 
+                sh 'npm install'
 
-        stage('Build') { 
+            }
 
-            steps { 
+        }
+        stage('Test') {
 
-                echo 'Building the application...' 
+            steps {
 
-                // Install dependencies 
+                echo 'Running unit tests...'
 
-                sh 'npm install' 
+                // If tests fail here, the pipeline will stop automatically
 
-            } 
+                sh 'npm test'
 
-        } 
+            }
 
-  
+        }
+        stage('Containerize') {
 
-        stage('Test') { 
+            steps {
 
-            steps { 
+                echo 'Creating Docker image...'
 
-                echo 'Running unit tests...' 
+                // Build the image using the Dockerfile in the root directory
 
-                // If tests fail here, the pipeline will stop automatically 
+                sh "docker build -t ${DOCKER_HUB_USER}/${IMAGE_NAME}:latest ."
 
-                sh 'npm test' 
+            }
 
-            } 
+        }
+        stage('Push') {
 
-        } 
+            steps {
 
-  
+                echo 'Logging into Docker Hub and pushing image...'
 
-        stage('Containerize') { 
+                // Using Jenkins Credentials Provider to avoid hardcoding passwords
 
-            steps { 
+                withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDS}", passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
 
-                echo 'Creating Docker image...' 
+                    sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
 
-                // Build the image using the Dockerfile in the root directory 
+                    sh "docker push ${DOCKER_HUB_USER}/${IMAGE_NAME}:latest"
 
-                sh "docker build -t ${DOCKER_HUB_USER}/${IMAGE_NAME}:latest ." 
+                }
 
-            } 
+            }
 
-        } 
+        }
 
-  
+    }
+    post {
 
-        stage('Push') { 
+        always {
 
-            steps { 
+            echo 'Cleaning up workspace...'
 
-                echo 'Logging into Docker Hub and pushing image...' 
+            // Optional: remove the local image to save disk space on Jenkins node
 
-                // Using Jenkins Credentials Provider to avoid hardcoding passwords 
+            sh "docker rmi ${DOCKER_HUB_USER}/${IMAGE_NAME}:latest || true"
 
-                withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDS}", passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) { 
+        }
 
-                    sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin" 
+    }
 
-                    sh "docker push ${DOCKER_HUB_USER}/${IMAGE_NAME}:latest" 
-
-                } 
-
-            } 
-
-        } 
-
-    } 
-
-  
-
-    post { 
-
-        always { 
-
-            echo 'Cleaning up workspace...' 
-
-            // Optional: remove the local image to save disk space on Jenkins node 
-
-            sh "docker rmi ${DOCKER_HUB_USER}/${IMAGE_NAME}:latest || true" 
-
-        } 
-
-    } 
-
-} 
+}
